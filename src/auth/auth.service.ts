@@ -8,7 +8,7 @@ import { UserService } from "src/users/users.service";
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly userService: UserService
+    private readonly userService: UserService,
   ) { }
   async register(userDetails: RegisterUserRequestDto): Promise<RegisterUserResponseDto | null> {
     const previousUser = await this.userService.fetchByEmail(userDetails.email)
@@ -35,6 +35,6 @@ export class AuthService {
   }
 
   private async createAccessToken(payload: AccessTokenPayload): Promise<string> {
-    return this.jwtService.signAsync(payload, { secret: 'secret', expiresIn: '1d' })
+    return await this.jwtService.signAsync(payload)
   }
 }

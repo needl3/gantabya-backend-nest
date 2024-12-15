@@ -1,16 +1,15 @@
 import { createParamDecorator, ExecutionContext, UnauthorizedException } from "@nestjs/common";
 import { Request } from "express";
-import { Types } from "mongoose";
+import { AccessTokenPayload } from "src/auth/dto/login-user.dto";
 
-export type TAuthenticatedUser = { userId: Types.ObjectId }
 export interface MaybeAuthenticatedRequest extends Request {
-  userId?: Types.ObjectId
+  user?: AccessTokenPayload
 }
 
 export const AuthenticatedUser = createParamDecorator((data: unknown, context: ExecutionContext) => {
   const request = context.switchToHttp().getRequest<MaybeAuthenticatedRequest>()
 
-  if (!request.userId) throw new UnauthorizedException("User is not authenticated")
+  if (!request.user?.id) throw new UnauthorizedException("User is not authenticated")
 
-  return { userId: request.userId }
+  return request.user
 })

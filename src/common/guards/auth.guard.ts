@@ -14,16 +14,14 @@ export class AuthenticationGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<MaybeAuthenticatedRequest>()
 
-    console.log("Cookies: ", request.cookies)
     const authorization = request.cookies.authorization?.split(' ')[1]
-    console.log("Authorization: ", authorization)
     if (!authorization) throw new UnauthorizedException()
 
     try {
       const verifiedPayload: AccessTokenPayload = await this.jwtService.verifyAsync(authorization,
         { secret: this.configService.get<string>(JWT_SECRET_IDENTIFIER) }
       )
-      request.userId = verifiedPayload.userId
+      request.user = verifiedPayload
     } catch (e) {
       console.error(e)
       throw new UnauthorizedException()

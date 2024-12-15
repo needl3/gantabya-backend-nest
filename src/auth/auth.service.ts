@@ -31,7 +31,7 @@ export class AuthService {
 
     if (!userDetails) return null
 
-    return this.createAccessToken({ userId: userDetails._id })
+    return this.createAccessToken({ id: userDetails._id, role: userDetails.role })
   }
 
   private async createAccessToken(payload: AccessTokenPayload): Promise<string> {

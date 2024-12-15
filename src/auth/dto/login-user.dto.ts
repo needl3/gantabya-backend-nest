@@ -10,5 +10,6 @@ export class LoginUserResponseDto {
 }
 
 export interface AccessTokenPayload {
-  userId: Types.ObjectId
+  id: Types.ObjectId
+  role: string
 }

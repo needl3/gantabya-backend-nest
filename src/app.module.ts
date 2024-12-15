@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DATABASE_URL_IDENTIFIER } from './common/constants/env.constants';
 import { AdminModule } from './admin/admin.module';
+import { VehiclesModule } from './vehicles/vehicles.module';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { AdminModule } from './admin/admin.module';
       inject: [ConfigService]
     }),
     AuthModule,
-    AdminModule
+    AdminModule,
+    VehiclesModule,
   ],
 })
 export class AppModule { }

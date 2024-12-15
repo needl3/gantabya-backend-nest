@@ -38,8 +38,3 @@ export class DeleteVehicleRequestDto {
 export class DeleteVehicleResponseDto extends CreateVehicleResponseDto {
   _id: Types.ObjectId;
 }
-
-export class ListVehiclesQueryDto {
-  page: number;
-  limit: number;
-}

@@ -36,8 +36,8 @@ export class AdminVehicleService {
     throw new Error("Vehicle could not be deleted")
   }
 
-  async listVehicles(page: number, limit: number) {
-    const vehicles = await this.vehicleModel.find().skip(page * limit).limit(limit)
+  async listVehicles(page: number, limit: number, type?: string) {
+    const vehicles = await this.vehicleModel.find({ type }).skip(page * limit).limit(limit)
 
     return vehicles
   }

@@ -1,11 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFiles, UseGuards, UseInterceptors } from "@nestjs/common";
-import { CreateVehicleRequestDto, ListVehiclesQueryDto, UpdateVehicleRequestDto } from "./admin-vehicle.dto";
+import { CreateVehicleRequestDto, UpdateVehicleRequestDto } from "./admin-vehicle.dto";
 import { AdminVehicleService } from "./admin-vehicle.service";
 import { RolesGuard } from "src/common/guards/role.guard";
 import { Roles } from "src/common/decorators/roles.decorator";
 import { AuthenticationGuard } from "src/common/guards/auth.guard";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Types } from "mongoose";
+import { ListVehiclesQueryDto } from "src/common/dto/vehicle.dto";
 
 @Controller('/admin/vehicle')
 @UseGuards(AuthenticationGuard, RolesGuard)
@@ -36,7 +37,7 @@ export class AdminVehicleController {
   @Get()
   @Roles(['admin'])
   async listVehicles(@Query() query: ListVehiclesQueryDto) {
-    return await this.adminVehicleService.listVehicles(query.page || 0, query.limit || 10)
+    return await this.adminVehicleService.listVehicles(query.page || 0, query.limit || 10, query.type)
   }
 
   @Get(":id")

@@ -2,22 +2,114 @@ import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Vehicle } from "./vehicle.schema";
 import { Model, Types } from "mongoose";
+import { ConfigService } from "@nestjs/config";
+import { KHALTI_KEY_IDENTIFIER } from "src/common/constants/env.constants";
+import { User } from "src/users/users.schema";
+import { CheckoutFailedKhaltiResponse, CheckoutSuccessKhaltiResponse, KhaltiPaymentVerificationResponse } from "./vehicle.dto";
+import { BookingTxnService } from "src/booking_txn/booking_txn.service";
 
 @Injectable()
 export class VehicleService {
-  constructor(@InjectModel(Vehicle.name) private vehicleModel: Model<Vehicle>) { }
+  khaltiOptions: Record<string, any>
+  khaltiCheckoutUrl: string
+  khaltiVerificationUrl: string
+  constructor(
+    @InjectModel(Vehicle.name) private vehicleModel: Model<Vehicle>,
+    private readonly configService: ConfigService,
+    private readonly bookingTxnService: BookingTxnService
+  ) {
+    // TODO: Move khalti to a separate service
+    this.khaltiOptions = {
+      'method': 'POST',
+      'headers': {
+        'Authorization': `key ${this.configService.get<string>(KHALTI_KEY_IDENTIFIER)}`,
+        'Content-Type': 'application/json',
+      },
+    };
+    this.khaltiCheckoutUrl = 'https://a.khalti.com/api/v2/epayment/initiate/'
+    this.khaltiVerificationUrl = 'https://a.khalti.com/api/v2/epayment/lookup/'
+  }
 
   async listAvailableVehicles(page: number, limit: number, type?: string) {
     return await this.vehicleModel.find({
       type,
-      bookedBy: null
+      bookingTxn: null
     }).skip(page * limit).limit(limit)
   }
 
   async listBookedVehicles(userid: Types.ObjectId, page: number, limit: number, type?: string) {
-    return await this.vehicleModel.find({
+    // TODO: Replace with aggregate query
+    const bookingTxns = await this.bookingTxnService.findByUser(userid)
+    const completedBookingTxns = bookingTxns.filter(txn => txn.status === 'booked')
+    const bookedVehicles = await this.vehicleModel.find({
       type,
-      bookedBy: { $eq: userid }
+      bookingTxn: { $in: completedBookingTxns.map(txn => txn._id) }
     }).skip(page * limit).limit(limit)
+
+    return bookedVehicles.map(vehicle => ({
+      ...vehicle.toObject(),
+      bookingTxn: completedBookingTxns.find(txn => txn._id.toString() === vehicle.bookingTxn._id.toString())
+    }))
+  }
+
+  async getVehicleById(id: Types.ObjectId) {
+    return await this.vehicleModel.findById(id)
+  }
+
+  async createKhaltiCheckoutSession(bookingUser: User, vehicleDetails: Vehicle): Promise<CheckoutSuccessKhaltiResponse | null> {
+    const khaltiSessionResponse: CheckoutSuccessKhaltiResponse | CheckoutFailedKhaltiResponse = await fetch(this.khaltiCheckoutUrl, {
+      ...this.khaltiOptions,
+      body: JSON.stringify({
+        "return_url": `http://localhost:3000/vehicles/book/${vehicleDetails._id}/confirm`,
+        "website_url": "http://localhost:3000",
+        "amount": vehicleDetails.pricePerDay,
+        "purchase_order_id": vehicleDetails._id,
+        "purchase_order_name": vehicleDetails.name,
+        "customer_info": {
+          "name": bookingUser.name,
+          "email": bookingUser.email,
+        }
+      })
+    }).then(r => r.json())
+
+    return {
+      pidx: 'asdf',
+      payment_url: 'http://localhost:3000/vehicles/book/' + vehicleDetails._id + '/confirm?' + new URLSearchParams({
+        pidx: 'asdf',
+        status: 'Completed',
+        transaction_id: 'asdf',
+        tids: 'asdf',
+        amount: '1000',
+        mobile: 'asdfasd',
+        purchase_order_id: 'asdfas',
+        purchase_order_name: 'asdf',
+        total_amount: 'asdf'
+      }),
+      expires_at: 'asdf',
+      expires_in: 1000
+    }
+    if ("error_key" in khaltiSessionResponse || "status_code" in khaltiSessionResponse) {
+      return null
+    }
+
+    // return khaltiSessionResponse
+  }
+
+  async verifyPayment(pidx: string): Promise<boolean> {
+    return true
+    const response: KhaltiPaymentVerificationResponse = await fetch(this.khaltiVerificationUrl, {
+      ...this.khaltiOptions,
+      body: JSON.stringify({
+        pidx
+      }),
+    }).then(r => r.json())
+
+    return response.status === 'Completed'
+  }
+
+  async bookVehicle(userId: Types.ObjectId, vehicleid: Types.ObjectId, pidx: string) {
+    // TODO: Wrap these in a transaction
+    const bookingTxn = await this.bookingTxnService.markAsBooked(pidx, userId)
+    return await this.vehicleModel.findOneAndUpdate({ _id: vehicleid }, { bookingTxn })
   }
 }

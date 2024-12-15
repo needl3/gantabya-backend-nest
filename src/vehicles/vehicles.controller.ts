@@ -1,15 +1,22 @@
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, HttpException, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
 import { VehicleService } from "./vehicles.service";
 import { ListVehiclesQueryDto } from "src/common/dto/vehicle.dto";
 import { AuthenticationGuard } from "src/common/guards/auth.guard";
 import { AuthenticatedUser } from "src/common/decorators/authenticated-user.decorator";
 import { AccessTokenPayload } from "src/auth/dto/login-user.dto";
+import { UserService } from "src/users/users.service";
+import { Types } from "mongoose";
+import { Response } from "express";
+import { PaymentSuccessKhaltiCallbackBodyDto } from "./vehicle.dto";
+import { BookingTxnService } from "src/booking_txn/booking_txn.service";
 
 @Controller('vehicles')
 @UseGuards(AuthenticationGuard)
 export class VehiclesController {
   constructor(
     private readonly vehiclesService: VehicleService,
+    private readonly userService: UserService,
+    private readonly bookingTxnService: BookingTxnService,
   ) { }
 
   @Get()
@@ -20,5 +27,50 @@ export class VehiclesController {
   @Get('booked')
   listBookedVehicles(@Query() query: ListVehiclesQueryDto, @AuthenticatedUser() user: AccessTokenPayload) {
     return this.vehiclesService.listBookedVehicles(user.id, query.page || 0, query.limit || 10, query.type)
+  }
+
+  @Post('book/:id')
+  async bookVehicle(
+    @Param('id') vehicleId: Types.ObjectId,
+    @AuthenticatedUser() user: AccessTokenPayload,
+    @Res() response: Response
+  ) {
+    // TODO: Move these db specific operations to a service
+    const bookingUser = await this.userService.fetchById(user.id)
+    if (!bookingUser) throw new HttpException('User not found', 404)
+
+    const vehicleDetails = await this.vehiclesService.getVehicleById(vehicleId)
+    if (!vehicleDetails) throw new HttpException('Vehicle not found', 404)
+
+    const khaltiCheckoutSession = await this.vehiclesService.createKhaltiCheckoutSession(bookingUser, vehicleDetails)
+    if (!khaltiCheckoutSession) throw new HttpException('Could not create Khalti checkout session', 500)
+
+    this.bookingTxnService.create({
+      pidx: khaltiCheckoutSession.pidx,
+      user: bookingUser._id,
+      price: 100,
+      from: new Date(),
+      to: new Date(),
+      vehicle: vehicleDetails._id,
+      status: 'pending'
+    })
+
+    response.redirect(khaltiCheckoutSession.payment_url)
+  }
+
+  @Get('book/:id/confirm')
+  async confirmKhaltiCheckout(
+    @Param('id') id: Types.ObjectId,
+    @AuthenticatedUser() user: AccessTokenPayload,
+    @Query() paymentInfo: PaymentSuccessKhaltiCallbackBodyDto
+  ) {
+    if (!this.vehiclesService.verifyPayment(paymentInfo.pidx)) {
+      throw new HttpException('Invalid payment', 400)
+    }
+
+    const bookedVehicle = await this.vehiclesService.bookVehicle(user.id, id, paymentInfo.pidx)
+    if (!bookedVehicle) throw new HttpException('Could not book vehicle', 500)
+
+    return bookedVehicle
   }
 }

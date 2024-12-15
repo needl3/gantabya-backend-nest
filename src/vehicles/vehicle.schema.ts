@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { IsArray, IsNumber, IsString } from "class-validator";
 import mongoose, { HydratedDocument, Types } from "mongoose";
-import { User } from "src/users/users.schema";
+import { BookingTxn } from "src/booking_txn/booking_txn.schema";
 
 export type VehicleDocument = HydratedDocument<Vehicle>
 
@@ -34,8 +33,8 @@ export class Vehicle {
   @Prop({ required: true })
   modelYear: number
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'BookedBy', required: false })
-  bookedBy: User
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'BookingTxn', required: false })
+  bookingTxn: BookingTxn
 }
 
 export const VehicleSchema = SchemaFactory.createForClass(Vehicle)

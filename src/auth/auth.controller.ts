@@ -27,7 +27,7 @@ export class AuthController {
 
     if (!accessToken) throw new UnauthorizedException()
 
-    response.cookie(AUTH_FIELD, `Bearer ${accessToken}`, { httpOnly: true })
+    response.cookie(AUTH_FIELD, `Bearer ${accessToken}`)
     return { accessToken }
   }
 
@@ -38,7 +38,7 @@ export class AuthController {
   }
 
   @Delete('logout')
-  async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('authorization')
+  async logout(@Res({ passthrough: true }) response: Response) {
+    response.clearCookie(AUTH_FIELD)
   }
 }

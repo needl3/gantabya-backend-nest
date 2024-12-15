@@ -9,7 +9,11 @@ async function bootstrap() {
   const logger = new Logger('Gantabya');
   logger.log(APP_CONFIG.banner);;
 
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { cors: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.enableCors({
+    origin: ['http://localhost:3000', 'http://localhost:5173'],
+    credentials: true,
+  });
   app.use(cookieParser());
   await app.listen(process.env.PORT ?? 3000, () => {
     logger.log(`Server is running on port ${process.env.PORT ?? 3000}`);

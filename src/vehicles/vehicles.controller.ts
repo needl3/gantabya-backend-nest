@@ -24,6 +24,11 @@ export class VehiclesController {
     return this.vehiclesService.listAvailableVehicles(query.page || 0, query.limit || 10, query.type)
   }
 
+  @Get(':id')
+  getVehicleById(@Param('id') id: Types.ObjectId) {
+    return this.vehiclesService.getVehicleById(id)
+  }
+
   @Get('booked')
   listBookedVehicles(@Query() query: ListVehiclesQueryDto, @AuthenticatedUser() user: AccessTokenPayload) {
     return this.vehiclesService.listBookedVehicles(user.id, query.page || 0, query.limit || 10, query.type)

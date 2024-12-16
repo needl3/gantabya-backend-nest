@@ -37,7 +37,9 @@ export class AdminVehicleService {
   }
 
   async listVehicles(page: number, limit: number, type?: string) {
-    const vehicles = await this.vehicleModel.find({ type }).skip(page * limit).limit(limit)
+    const filters: Record<any, any> = {}
+    if (type) filters['type'] = type
+    const vehicles = await this.vehicleModel.find(filters).skip(page * limit).limit(limit)
 
     return vehicles
   }

@@ -40,15 +40,14 @@ export class VehicleService {
   async listBookedVehicles(userid: Types.ObjectId, page: number, limit: number, type?: string) {
     // TODO: Replace with aggregate query
     const bookingTxns = await this.bookingTxnService.findByUser(userid)
-    const completedBookingTxns = bookingTxns.filter(txn => txn.status === 'booked')
     const bookedVehicles = await this.vehicleModel.find({
       ...(type ? { type } : {}),
-      bookingTxn: { $in: completedBookingTxns.map(txn => txn._id) }
+      bookingTxn: { $in: bookingTxns.map(txn => txn._id) }
     }).skip(page * limit).limit(limit)
 
     return bookedVehicles.map(vehicle => ({
       vehicle: vehicle.toJSON(),
-      bookingInfo: completedBookingTxns.find(txn => txn._id.toString() === vehicle.bookingTxn._id.toString())
+      bookingInfo: bookingTxns.find(txn => txn._id.toString() === vehicle.bookingTxn._id.toString())
     }))
   }
 

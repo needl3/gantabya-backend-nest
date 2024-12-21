@@ -12,7 +12,7 @@ export class BookingTxn {
   @Prop({ required: true, unique: true })
   pidx: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'BookingUser', required: false })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false })
   user: User
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle', required: false })
@@ -28,7 +28,7 @@ export class BookingTxn {
   price: number
 
   @Prop({ required: true, default: 'pending' })
-  status: 'pending' | 'booked' | 'cancelled'
+  status: 'pending' | 'booked' | 'cancelled' | 'completed'
 }
 
 export const BookingTxnSchema = SchemaFactory.createForClass(BookingTxn)

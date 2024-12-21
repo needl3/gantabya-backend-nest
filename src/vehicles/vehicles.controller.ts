@@ -24,14 +24,16 @@ export class VehiclesController {
     return this.vehiclesService.listAvailableVehicles(query.page || 0, query.limit || 10, query.type)
   }
 
+  @Get('booked')
+  async listBookedVehicles(@Query() query: ListVehiclesQueryDto, @AuthenticatedUser() user: AccessTokenPayload) {
+    const bookedVehicles = await this.vehiclesService.listBookedVehicles(user.id, query.page || 0, query.limit || 10, query.type)
+    return bookedVehicles
+
+  }
+
   @Get(':id')
   getVehicleById(@Param('id') id: Types.ObjectId) {
     return this.vehiclesService.getVehicleById(id)
-  }
-
-  @Get('booked')
-  listBookedVehicles(@Query() query: ListVehiclesQueryDto, @AuthenticatedUser() user: AccessTokenPayload) {
-    return this.vehiclesService.listBookedVehicles(user.id, query.page || 0, query.limit || 10, query.type)
   }
 
   @Post('book/:id')
@@ -73,9 +75,9 @@ export class VehiclesController {
       throw new HttpException('Invalid payment', 400)
     }
 
-    const bookedVehicle = await this.vehiclesService.bookVehicle(user.id, id, paymentInfo.pidx)
-    if (!bookedVehicle) throw new HttpException('Could not book vehicle', 500)
+    const bookingResponse = await this.vehiclesService.bookVehicle(user.id, id, paymentInfo.pidx)
+    if (!bookingResponse) throw new HttpException('Could not book vehicle', 500)
 
-    return bookedVehicle
+    return { vehicle: bookingResponse.vehicle, bookingInfo: bookingResponse.bookingInfo }
   }
 }

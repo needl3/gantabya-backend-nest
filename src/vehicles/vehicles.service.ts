@@ -42,13 +42,13 @@ export class VehicleService {
     const bookingTxns = await this.bookingTxnService.findByUser(userid)
     const completedBookingTxns = bookingTxns.filter(txn => txn.status === 'booked')
     const bookedVehicles = await this.vehicleModel.find({
-      type,
+      ...(type ? { type } : {}),
       bookingTxn: { $in: completedBookingTxns.map(txn => txn._id) }
     }).skip(page * limit).limit(limit)
 
     return bookedVehicles.map(vehicle => ({
-      ...vehicle.toObject(),
-      bookingTxn: completedBookingTxns.find(txn => txn._id.toString() === vehicle.bookingTxn._id.toString())
+      vehicle: vehicle.toJSON(),
+      bookingInfo: completedBookingTxns.find(txn => txn._id.toString() === vehicle.bookingTxn._id.toString())
     }))
   }
 
@@ -60,7 +60,7 @@ export class VehicleService {
     const khaltiSessionResponse: CheckoutSuccessKhaltiResponse | CheckoutFailedKhaltiResponse = await fetch(this.khaltiCheckoutUrl, {
       ...this.khaltiOptions,
       body: JSON.stringify({
-        "return_url": `http://localhost:3000/vehicles/book/${vehicleDetails._id}/confirm`,
+        "return_url": `http://localhost:5173/vehicle/book/${vehicleDetails._id}/confirm`,
         "website_url": "http://localhost:3000",
         "amount": vehicleDetails.pricePerDay,
         "purchase_order_id": vehicleDetails._id,
@@ -74,7 +74,7 @@ export class VehicleService {
 
     return {
       pidx: 'asdf',
-      payment_url: 'http://localhost:3000/vehicles/book/' + vehicleDetails._id + '/confirm?' + new URLSearchParams({
+      payment_url: 'http://localhost:5173/vehicle/book/' + vehicleDetails._id + '/confirm?' + new URLSearchParams({
         pidx: 'asdf',
         status: 'Completed',
         transaction_id: 'asdf',
@@ -110,6 +110,11 @@ export class VehicleService {
   async bookVehicle(userId: Types.ObjectId, vehicleid: Types.ObjectId, pidx: string) {
     // TODO: Wrap these in a transaction
     const bookingTxn = await this.bookingTxnService.markAsBooked(pidx, userId)
-    return await this.vehicleModel.findOneAndUpdate({ _id: vehicleid }, { bookingTxn })
+    return {
+      vehicle: await this.vehicleModel.findOneAndUpdate(
+        { _id: vehicleid },
+        { bookingTxn }),
+      bookingInfo: bookingTxn
+    }
   }
 }

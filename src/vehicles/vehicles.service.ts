@@ -47,7 +47,7 @@ export class VehicleService {
 
     return bookedVehicles.map(vehicle => ({
       vehicle: vehicle.toJSON(),
-      bookingInfo: bookingTxns.find(txn => txn._id.toString() === vehicle.bookingTxn._id.toString())
+      bookingInfo: bookingTxns.find(txn => txn.vehicle._id.toString() === vehicle._id.toString())
     }))
   }
 

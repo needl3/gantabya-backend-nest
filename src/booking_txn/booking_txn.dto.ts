@@ -8,4 +8,5 @@ export class CreateBookingTxnDto {
   to: Date;
   price: number;
   status: 'pending' | 'booked' | 'cancelled'
+  pickupCoords: string;
 }

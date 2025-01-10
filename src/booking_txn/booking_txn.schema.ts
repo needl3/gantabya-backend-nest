@@ -29,6 +29,9 @@ export class BookingTxn {
 
   @Prop({ required: true, default: 'pending' })
   status: 'pending' | 'booked' | 'cancelled' | 'completed'
+
+  @Prop({ required: true })
+  pickupCoords: string
 }
 
 export const BookingTxnSchema = SchemaFactory.createForClass(BookingTxn)

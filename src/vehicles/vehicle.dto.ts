@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer";
-import { IsDate } from "class-validator";
+import { IsDate, IsString } from "class-validator";
 
 export type CheckoutSuccessKhaltiResponse = {
   pidx: string;
@@ -45,5 +45,6 @@ export class BookVehicleRequestDto {
   @IsDate()
   to: Date;
 
-  pickup_coords: string;
+  @IsString()
+  pickupCoords: string;
 }

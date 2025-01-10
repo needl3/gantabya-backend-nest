@@ -61,7 +61,8 @@ export class VehiclesController {
       from: body.from,
       to: body.to,
       vehicle: vehicleDetails._id,
-      status: 'pending'
+      status: 'pending',
+      pickupCoords: body.pickupCoords
     })
 
     response.redirect(khaltiCheckoutSession.payment_url)

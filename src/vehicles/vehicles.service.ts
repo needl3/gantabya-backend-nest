@@ -71,31 +71,14 @@ export class VehicleService {
       })
     }).then(r => r.json())
 
-    return {
-      pidx: 'asdf',
-      payment_url: 'http://localhost:5173/vehicle/book/' + vehicleDetails._id + '/confirm?' + new URLSearchParams({
-        pidx: 'asdf',
-        status: 'Completed',
-        transaction_id: 'asdf',
-        tids: 'asdf',
-        amount: '1000',
-        mobile: 'asdfasd',
-        purchase_order_id: 'asdfas',
-        purchase_order_name: 'asdf',
-        total_amount: 'asdf'
-      }),
-      expires_at: 'asdf',
-      expires_in: 1000
-    }
     if ("error_key" in khaltiSessionResponse || "status_code" in khaltiSessionResponse) {
       return null
     }
 
-    // return khaltiSessionResponse
+    return khaltiSessionResponse
   }
 
   async verifyPayment(pidx: string): Promise<boolean> {
-    return true
     const response: KhaltiPaymentVerificationResponse = await fetch(this.khaltiVerificationUrl, {
       ...this.khaltiOptions,
       body: JSON.stringify({

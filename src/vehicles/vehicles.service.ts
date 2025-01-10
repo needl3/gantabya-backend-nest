@@ -5,7 +5,7 @@ import { Model, Types } from "mongoose";
 import { ConfigService } from "@nestjs/config";
 import { KHALTI_KEY_IDENTIFIER } from "src/common/constants/env.constants";
 import { User } from "src/users/users.schema";
-import { CheckoutFailedKhaltiResponse, CheckoutSuccessKhaltiResponse, KhaltiPaymentVerificationResponse } from "./vehicle.dto";
+import { BookVehicleRequestDto, CheckoutFailedKhaltiResponse, CheckoutSuccessKhaltiResponse, KhaltiPaymentVerificationResponse } from "./vehicle.dto";
 import { BookingTxnService } from "src/booking_txn/booking_txn.service";
 
 @Injectable()
@@ -42,7 +42,7 @@ export class VehicleService {
     const bookingTxns = await this.bookingTxnService.findByUser(userid)
     const bookedVehicles = await this.vehicleModel.find({
       ...(type ? { type } : {}),
-      bookingTxn: { $in: bookingTxns.map(txn => txn._id) }
+      _id: { $in: bookingTxns.map(txn => txn.vehicle._id) }
     }).skip(page * limit).limit(limit)
 
     return bookedVehicles.map(vehicle => ({
@@ -55,13 +55,13 @@ export class VehicleService {
     return await this.vehicleModel.findById(id)
   }
 
-  async createKhaltiCheckoutSession(bookingUser: User, vehicleDetails: Vehicle): Promise<CheckoutSuccessKhaltiResponse | null> {
+  async createKhaltiCheckoutSession(bookingUser: User, vehicleDetails: Vehicle, price: number): Promise<CheckoutSuccessKhaltiResponse | null> {
     const khaltiSessionResponse: CheckoutSuccessKhaltiResponse | CheckoutFailedKhaltiResponse = await fetch(this.khaltiCheckoutUrl, {
       ...this.khaltiOptions,
       body: JSON.stringify({
         "return_url": `http://localhost:5173/vehicle/book/${vehicleDetails._id}/confirm`,
         "website_url": "http://localhost:3000",
-        "amount": vehicleDetails.pricePerDay,
+        "amount": price,
         "purchase_order_id": vehicleDetails._id,
         "purchase_order_name": vehicleDetails.name,
         "customer_info": {
@@ -98,5 +98,12 @@ export class VehicleService {
         { bookingTxn }),
       bookingInfo: bookingTxn
     }
+  }
+
+  async calculateVehicleBookingPrice(vehicle: Vehicle, body: BookVehicleRequestDto): Promise<number> {
+    const diffInMilliseconds = body.to.getTime() - body.from.getTime();
+
+    const diffInDays = diffInMilliseconds / (1000 * 60 * 60 * 24);
+    return vehicle.pricePerDay * diffInDays * 100; // Convert from rupee to paisa 
   }
 }

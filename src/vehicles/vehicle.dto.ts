@@ -1,3 +1,6 @@
+import { Transform } from "class-transformer";
+import { IsDate } from "class-validator";
+
 export type CheckoutSuccessKhaltiResponse = {
   pidx: string;
   payment_url: string;
@@ -31,4 +34,16 @@ export type KhaltiPaymentVerificationResponse = {
   transaction_id: string,
   fee: number,
   refunded: boolean
+}
+
+export class BookVehicleRequestDto {
+  @Transform(({ value }) => (value ? new Date(value) : undefined))
+  @IsDate()
+  from: Date;
+
+  @Transform(({ value }) => (value ? new Date(value) : undefined))
+  @IsDate()
+  to: Date;
+
+  pickup_coords: string;
 }

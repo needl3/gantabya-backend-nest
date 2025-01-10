@@ -1,4 +1,4 @@
-import { Controller, Get, HttpException, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpException, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
 import { VehicleService } from "./vehicles.service";
 import { ListVehiclesQueryDto } from "src/common/dto/vehicle.dto";
 import { AuthenticationGuard } from "src/common/guards/auth.guard";
@@ -7,7 +7,7 @@ import { AccessTokenPayload } from "src/auth/dto/login-user.dto";
 import { UserService } from "src/users/users.service";
 import { Types } from "mongoose";
 import { Response } from "express";
-import { PaymentSuccessKhaltiCallbackBodyDto } from "./vehicle.dto";
+import { BookVehicleRequestDto, PaymentSuccessKhaltiCallbackBodyDto } from "./vehicle.dto";
 import { BookingTxnService } from "src/booking_txn/booking_txn.service";
 
 @Controller('vehicles')
@@ -28,7 +28,6 @@ export class VehiclesController {
   async listBookedVehicles(@Query() query: ListVehiclesQueryDto, @AuthenticatedUser() user: AccessTokenPayload) {
     const bookedVehicles = await this.vehiclesService.listBookedVehicles(user.id, query.page || 0, query.limit || 10, query.type)
     return bookedVehicles
-
   }
 
   @Get(':id')
@@ -40,6 +39,7 @@ export class VehiclesController {
   async bookVehicle(
     @Param('id') vehicleId: Types.ObjectId,
     @AuthenticatedUser() user: AccessTokenPayload,
+    @Body() body: BookVehicleRequestDto,
     @Res() response: Response
   ) {
     // TODO: Move these db specific operations to a service
@@ -49,15 +49,17 @@ export class VehiclesController {
     const vehicleDetails = await this.vehiclesService.getVehicleById(vehicleId)
     if (!vehicleDetails) throw new HttpException('Vehicle not found', 404)
 
-    const khaltiCheckoutSession = await this.vehiclesService.createKhaltiCheckoutSession(bookingUser, vehicleDetails)
+    const price = await this.vehiclesService.calculateVehicleBookingPrice(vehicleDetails, body)
+
+    const khaltiCheckoutSession = await this.vehiclesService.createKhaltiCheckoutSession(bookingUser, vehicleDetails, price)
     if (!khaltiCheckoutSession) throw new HttpException('Could not create Khalti checkout session', 500)
 
     this.bookingTxnService.create({
       pidx: khaltiCheckoutSession.pidx,
       user: bookingUser._id,
-      price: 100,
-      from: new Date(),
-      to: new Date(),
+      price,
+      from: body.from,
+      to: body.to,
       vehicle: vehicleDetails._id,
       status: 'pending'
     })

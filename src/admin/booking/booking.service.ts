@@ -27,19 +27,16 @@ export class AdminBookingService {
   }
 
   async unbook(bookingId: Types.ObjectId) {
-    console.log("Unbooking booking", bookingId)
-    console.log("Booking from query: ", await this.bookingTxnModel.findOne({ _id: bookingId }))
     const booking = await this.bookingTxnModel.findOneAndUpdate(
       { _id: bookingId },
       {
         status: 'completed',
       },
       { new: true })
-    console.log("Booking", booking)
 
     if (!booking) return null
 
-    this.vehicleModel.findOneAndUpdate(
+    await this.vehicleModel.findOneAndUpdate(
       { _id: booking.vehicle },
       {
         bookingTxn: null

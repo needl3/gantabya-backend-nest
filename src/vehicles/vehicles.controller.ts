@@ -21,7 +21,7 @@ export class VehiclesController {
 
   @Get()
   listAvailableVehicles(@Query() query: ListVehiclesQueryDto) {
-    return this.vehiclesService.listAvailableVehicles(query.page || 0, query.limit || 10, query.type)
+    return this.vehiclesService.listAvailableVehicles(query.page || 0, query.limit || 10, query.type, query.searchQuery)
   }
 
   @Get('booked')

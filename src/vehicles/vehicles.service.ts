@@ -30,9 +30,11 @@ export class VehicleService {
     this.khaltiVerificationUrl = 'https://a.khalti.com/api/v2/epayment/lookup/'
   }
 
-  async listAvailableVehicles(page: number, limit: number, type?: string) {
+  async listAvailableVehicles(page: number, limit: number, type?: string, searchQuery?: string) {
+    console.log("Search query: ", searchQuery)
     return await this.vehicleModel.find({
-      type,
+      ...(type ? { type } : {}),
+      ...(searchQuery ? { name: { $regex: searchQuery, $options: 'i' } } : {}),
       bookingTxn: null
     }).skip(page * limit).limit(limit)
   }

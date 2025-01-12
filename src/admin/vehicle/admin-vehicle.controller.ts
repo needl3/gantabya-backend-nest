@@ -4,21 +4,26 @@ import { AdminVehicleService } from "./admin-vehicle.service";
 import { RolesGuard } from "src/common/guards/role.guard";
 import { Roles } from "src/common/decorators/roles.decorator";
 import { AuthenticationGuard } from "src/common/guards/auth.guard";
-import { FileInterceptor } from "@nestjs/platform-express";
+import { FilesInterceptor } from "@nestjs/platform-express";
 import { Types } from "mongoose";
 import { ListVehiclesQueryDto } from "src/common/dto/vehicle.dto";
+import { FileService } from "src/services/file/file.service";
 
 @Controller('/admin/vehicle')
 @UseGuards(AuthenticationGuard, RolesGuard)
 export class AdminVehicleController {
   constructor(
     private readonly adminVehicleService: AdminVehicleService,
+    private readonly fileService: FileService
   ) { }
   @Post()
   @Roles(['admin'])
-  @UseInterceptors(FileInterceptor('images'))
-  async createVehicle(@Body() body: CreateVehicleRequestDto, @UploadedFiles() files: Express.Multer.File[]) {
-    return await this.adminVehicleService.createVehicle(body)
+  @UseInterceptors(FilesInterceptor('images'))
+  async createVehicle(
+    @Body() body: CreateVehicleRequestDto,
+    @UploadedFiles() files: Express.Multer.File[]) {
+    const uploadedFileLinks = await this.fileService.uploadFiles(files)
+    return await this.adminVehicleService.createVehicle({ ...body, images: uploadedFileLinks })
   }
 
   @Patch(":id")

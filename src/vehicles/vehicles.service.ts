@@ -31,7 +31,6 @@ export class VehicleService {
   }
 
   async listAvailableVehicles(page: number, limit: number, type?: string, searchQuery?: string) {
-    console.log("Search query: ", searchQuery)
     return await this.vehicleModel.find({
       ...(type ? { type } : {}),
       ...(searchQuery ? { name: { $regex: searchQuery, $options: 'i' } } : {}),
